@@ -1,0 +1,10 @@
+#container{
+	width:500px;
+	height: 500px;
+	display: inline;
+}
+
+div{
+	float: left;
+	display: inline-block;
+}
