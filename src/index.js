@@ -87,8 +87,14 @@ function showOnScreen(grid) {
 		.each(function(d) {
 			var newd = d3.select(this);
 			d.getClosedWall().forEach(function(e){
-				newd.style("border-" + e, "2px black solid");
-				if(d.current) newd.style("background-color", "black");
+				newd.style("border-" + e, "1px black solid");
+				if(d.current){
+					newd.style("background-color", "black");	
+				} 
+				if(d.isDestination){
+					newd.style("background-color", "red");	
+				} 
+				newd.style("border-radius", "10px");
 			});
 		})
 }
