@@ -71,3 +71,42 @@ maze.grid.forEach(function(each) {
 	})
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Maze.prototype.solve = function(init) {
+	var self = this;
+	init.tracked = true;
+	var initialLocation = init.cords;
+	var id = String.fromCharCode(97 + init.cords[0]) + String.fromCharCode(97 + init.cords[1]);
+	var cord = document.querySelector("#" + id);
+	cord.bgColor = "green";
+	var openWalls = init.getOpenWall();
+	var routes = openWalls.map(function(wall) {
+		var toAdd = movingDirections[directionMap[wall]];
+		var newCords = [initialLocation[0] + toAdd[0], initialLocation[1] + toAdd[1]];
+		return self.grid[newCords[0]][newCords[1]];
+	});
+	if(initialLocation[0] == 19 && initialLocation[1] == 19) return;
+	while(routes.length) {
+		var route = routes.splice(Math.floor(Math.random() * routes.length), 1)[0];
+		if(!route.tracked){
+			this.solve(route);
+		}
+	}
+	return;
+}
+
+
