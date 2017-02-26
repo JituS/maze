@@ -1,4 +1,4 @@
-const WIDTH = HEIGHT =40;
+const WIDTH = HEIGHT =30;
 const allDirections = {top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1]};
 const oppDirectionMap = {top:"bottom", left: "right", right:"left", bottom:"top"};
 const OPEN = "open";
@@ -106,32 +106,24 @@ function visualize(grid) {
 		});
 }
 
-Maze.prototype.solve = function(init) {
+Maze.prototype.solve = function(cell) {
 	if(found) return
 	visualize(this.grid);
-	var initialLocation = init.cords;
-	if(init.isDestination) found = true;
-	var openWalls = init.getOpenWall();
-	var grid = this.grid;
+	var initialLocation = cell.cords;
+	if(cell.isDestination) found = true;
+	var openWalls = cell.getOpenWall();
 	var routes = openWalls.map(function(wall) {
-		var toAdd = allDirections[wall];
-		var newCords = [initialLocation[0] + toAdd[0], initialLocation[1] + toAdd[1]];
-		return grid[newCords[0]][newCords[1]];
-	});
-	var routes = routes.filter(function(ea){
-		return  !ea.tracked;
-	})
-	if(routes.length == 0){
-		init.current = false;
-	} 
+		return this.cellAt(addCords(initialLocation, allDirections[wall]));
+	}, this).filter(function(each){ return !each.tracked});
+
 	while(routes.length) {
 		var route = routes.splice(Math.floor(Math.random() * routes.length), 1)[0];
-		init.tracked = true;
+		cell.tracked = true;
 		route.current = true
 		setTimeout(this.solve.bind(this, route), 50);
-		init.current = false;
+		cell.current = false;
 	}
-	return;
+	cell.current = false;
 }
 
 
