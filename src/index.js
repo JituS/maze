@@ -1,8 +1,8 @@
-var WIDTH = HEIGHT =40;
-var allDirections = {top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1]};
-var oppDirectionMap = {top:"bottom", left: "right", right:"left", bottom:"top"};
-var OPEN = "open";
-var CLOSED = "closed";
+const WIDTH = HEIGHT =40;
+const allDirections = {top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1]};
+const oppDirectionMap = {top:"bottom", left: "right", right:"left", bottom:"top"};
+const OPEN = "open";
+const CLOSED = "closed";
 var found = false;
 
 function Cell(cords) {
@@ -45,7 +45,7 @@ Maze.prototype.isValid = function(newCords){
 	return (newCords[0] < this.width && newCords[0] > -1 && newCords[1] < this.height && newCords[1] > -1);
 }
 
-Maze.prototype.getUnvisitedNeighbour = function(cell) {
+Maze.prototype.getUnvisitedNeighbours = function(cell) {
 	var self = this;
 	return Object.keys(allDirections).map(function(direction) {
 		var newCords = addCords(cell.cords, allDirections[direction]);
@@ -60,7 +60,7 @@ Maze.prototype.getUnvisitedNeighbour = function(cell) {
 
 Maze.prototype.createMaze = function(cell){
 	cell.visited = true;
-	var allUnvisitedNeighbours = this.getUnvisitedNeighbour(cell);
+	var allUnvisitedNeighbours = this.getUnvisitedNeighbours(cell);
 	while(allUnvisitedNeighbours.length) {
 		var neighbour = allUnvisitedNeighbours.splice(Math.floor(Math.random() * allUnvisitedNeighbours.length), 1)[0];
 		if(!neighbour.cell.visited){
