@@ -1,7 +1,6 @@
-
 var WIDTH = HEIGHT =40;
-var movingDirections = {top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1]};
-var oppSideMap = {top:"bottom", left: "right", right:"left", bottom:"top"};
+var allDirections = {top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1]};
+var oppDirectionMap = {top:"bottom", left: "right", right:"left", bottom:"top"};
 var OPEN = "open";
 var CLOSED = "closed";
 var found = false;
@@ -14,8 +13,8 @@ function Cell(cords) {
 	this.cords = cords;
 }
 
-Cell.prototype.markOpen = function(side) {
-	this.walls[side] = OPEN;
+Cell.prototype.markOpen = function(direction) {
+	this.walls[direction] = OPEN;
 }
 
 Cell.prototype.getOpenWall = function() {
@@ -37,22 +36,26 @@ function Maze(width, height, cells) {
 	this.grid = cells;
 }
 
+
+Maze.prototype.cellAt = function(cords) {
+	return this.grid[cords[0]][cords[1]];
+}
+
+Maze.prototype.isValid = function(newCords){
+	return (newCords[0] < this.width && newCords[0] > -1 && newCords[1] < this.height && newCords[1] > -1);
+}
+
 Maze.prototype.getUnvisitedNeighbour = function(cell) {
 	var self = this;
-	var neighbours = [];
-	Object.keys(movingDirections).forEach(function(eachDirection) {
-		var newCords = [cell.cords[0] + movingDirections[eachDirection][0], cell.cords[1] + movingDirections[eachDirection][1]];
-		if(newCords[0] < self.width && newCords[0] > -1 && newCords[1] < self.height && newCords[1] > -1){
-			var neighbourCell = self.grid[newCords[0]][newCords[1]];
-			if(!neighbourCell.visited){
-				var eachNeighbour = {};
-				eachNeighbour.side = eachDirection;	
-				eachNeighbour.neighbourCell = neighbourCell;
-				neighbours.push(eachNeighbour);
+	return Object.keys(allDirections).map(function(direction) {
+		var newCords = addCords(cell.cords, allDirections[direction]);
+		if(self.isValid(newCords)){
+			var nextCell = self.cellAt(newCords);
+			if(!nextCell.visited){
+				return getNeighbour(direction, nextCell)
 			} 
 		}
-	});
-	return neighbours;
+	}).filter(Boolean);;
 }
 
 Maze.prototype.createMaze = function(cell){
@@ -60,22 +63,26 @@ Maze.prototype.createMaze = function(cell){
 	var allUnvisitedNeighbours = this.getUnvisitedNeighbour(cell);
 	while(allUnvisitedNeighbours.length) {
 		var neighbour = allUnvisitedNeighbours.splice(Math.floor(Math.random() * allUnvisitedNeighbours.length), 1)[0];
-		if(!neighbour.neighbourCell.visited){
-			cell.markOpen(neighbour.side);
-			neighbour.neighbourCell.markOpen(oppSideMap[neighbour.side])
-			this.createMaze(neighbour.neighbourCell);
+		if(!neighbour.cell.visited){
+			cell.markOpen(neighbour.direction);
+			neighbour.cell.markOpen(oppDirectionMap[neighbour.direction])
+			this.createMaze(neighbour.cell);
 		}
 	}
-};
+}
 
-var allCells = new Array(HEIGHT).fill("-").map(function(a, y) {
-	var something = new Array(WIDTH).fill("-");
-	return something.map(function(b, x) {
-		return new Cell([y, x]);
-	});
-});
+function addCords(cords1, cords2) {
+	return [cords1[0] + cords2[0], cords1[1] + cords2[1]];
+}
 
-function showOnScreen(grid) {
+function getNeighbour(direction, nextCell) {
+	var eachNeighbour = {};
+	eachNeighbour.direction = direction;	
+	eachNeighbour.cell = nextCell;
+	return eachNeighbour;
+}
+
+function visualize(grid) {
 	d3.select("#container").selectAll("tr").remove();
 	var tr = d3.select("#container").selectAll("tr").data(grid);
 	tr.enter()
@@ -88,26 +95,26 @@ function showOnScreen(grid) {
 			var newd = d3.select(this);
 			d.getClosedWall().forEach(function(e){
 				newd.style("border-" + e, "1px black solid");
-				if(d.current){
-					newd.style("background-color", "black");	
-				} 
-				if(d.isDestination){
-					newd.style("background-color", "red");	
-				} 
-				newd.style("border-radius", "10px");
 			});
-		})
+			if(d.current){
+				newd.style("background-color", "black");	
+			} 
+			if(d.isDestination){
+				newd.style("background-color", "red");	
+			} 
+			newd.style("border-radius", "2px");
+		});
 }
 
 Maze.prototype.solve = function(init) {
 	if(found) return
-	showOnScreen(this.grid);
+	visualize(this.grid);
 	var initialLocation = init.cords;
 	if(init.isDestination) found = true;
 	var openWalls = init.getOpenWall();
 	var grid = this.grid;
 	var routes = openWalls.map(function(wall) {
-		var toAdd = movingDirections[wall];
+		var toAdd = allDirections[wall];
 		var newCords = [initialLocation[0] + toAdd[0], initialLocation[1] + toAdd[1]];
 		return grid[newCords[0]][newCords[1]];
 	});
@@ -121,21 +128,27 @@ Maze.prototype.solve = function(init) {
 		var route = routes.splice(Math.floor(Math.random() * routes.length), 1)[0];
 		init.tracked = true;
 		route.current = true
-		setTimeout(this.solve.bind(this, route), 10);
+		setTimeout(this.solve.bind(this, route), 50);
 		init.current = false;
 	}
 	return;
 }
 
+
+var allCells = new Array(HEIGHT).fill("-").map(function(a, y) {
+	var something = new Array(WIDTH).fill("-");
+	return something.map(function(b, x) {
+		return new Cell([y, x]);
+	});
+});
+
 window.onload = function() {
 	var container = document.querySelector("#container");
 	var maze = new Maze(WIDTH, HEIGHT, allCells);
-	maze.createMaze(maze.grid[0][0]);
-	var all = "";
-	var destination = maze.grid[Math.floor(Math.random() * WIDTH)-1][Math.floor(Math.random() * HEIGHT)-1];
+	maze.createMaze(maze.cellAt([0, 0]));
+	var destination = maze.cellAt([Math.floor(Math.random() * WIDTH), Math.floor(Math.random() * HEIGHT)]);
 	destination.isDestination = true;
-	destination.current = true
-	showOnScreen(maze.grid);
-	maze.solve(maze.grid[0][0]);
+	visualize(maze.grid);
+	maze.solve(maze.cellAt([0, 0]));
 }
 
