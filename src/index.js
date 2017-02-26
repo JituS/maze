@@ -106,21 +106,18 @@ function visualize(grid) {
 		});
 }
 
-Maze.prototype.solve = function(cell) {
+Maze.prototype.solve = function(cell, callback) {
 	if(found) return
 	visualize(this.grid);
-	var initialLocation = cell.cords;
 	if(cell.isDestination) found = true;
-	var openWalls = cell.getOpenWall();
-	var routes = openWalls.map(function(wall) {
-		return this.cellAt(addCords(initialLocation, allDirections[wall]));
+	var reachableDestinations = cell.getOpenWall().map(function(wall) {
+		return this.cellAt(addCords(cell.cords, allDirections[wall]));
 	}, this).filter(function(each){ return !each.tracked});
 
-	while(routes.length) {
-		var route = routes.splice(Math.floor(Math.random() * routes.length), 1)[0];
+	for (var i = 0; i < reachableDestinations.length; i++) {
 		cell.tracked = true;
-		route.current = true
-		setTimeout(this.solve.bind(this, route), 50);
+		reachableDestinations[i].current = true
+		setTimeout(this.solve.bind(this, reachableDestinations[i]), 50);
 		cell.current = false;
 	}
 	cell.current = false;
