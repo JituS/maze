@@ -121,7 +121,7 @@ Maze.prototype.solve = function(init) {
 		var route = routes.splice(Math.floor(Math.random() * routes.length), 1)[0];
 		init.tracked = true;
 		route.current = true
-		setTimeout(this.solve.bind(this, route), 100);
+		setTimeout(this.solve.bind(this, route), 10);
 		init.current = false;
 	}
 	return;
