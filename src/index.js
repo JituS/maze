@@ -1,9 +1,9 @@
-const WIDTH = HEIGHT =30;
+const WIDTH = HEIGHT = 60;
 const allDirections = {top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1]};
 const oppDirectionMap = {top:"bottom", left: "right", right:"left", bottom:"top"};
 const OPEN = "open";
 const CLOSED = "closed";
-var found = false;
+var i;
 
 function Cell(cords) {
 	this.visited = false;
@@ -83,12 +83,11 @@ function getNeighbour(direction, nextCell) {
 }
 
 function visualize(grid) {
-	d3.select("#container").selectAll("tr").remove();
 	var tr = d3.select("#container").selectAll("tr").data(grid);
 	tr.enter()
 		.append("tr")
 		.selectAll("td")
-		.data(function(d){return d})
+		.data(function(d, i){return d})
 		.enter()
 		.append("td")
 		.each(function(d) {
@@ -96,48 +95,56 @@ function visualize(grid) {
 			d.getClosedWall().forEach(function(e){
 				newd.style("border-" + e, "1px black solid");
 			});
-			if(d.current){
-				newd.style("background-color", "black");	
-			} 
 			if(d.isDestination){
-				newd.style("background-color", "red");	
-			} 
-			newd.style("border-radius", "2px");
+				newd.style("background-color", "black");
+			}
 		});
 }
 
-Maze.prototype.solve = function(cell, callback) {
-	if(found) return
-	visualize(this.grid);
-	if(cell.isDestination) found = true;
-	var reachableDestinations = cell.getOpenWall().map(function(wall) {
-		return this.cellAt(addCords(cell.cords, allDirections[wall]));
-	}, this).filter(function(each){ return !each.tracked});
-
-	for (var i = 0; i < reachableDestinations.length; i++) {
-		cell.tracked = true;
-		reachableDestinations[i].current = true
-		setTimeout(this.solve.bind(this, reachableDestinations[i]), 50);
-		cell.current = false;
-	}
-	cell.current = false;
+function drawCell(cell) {
+	setTimeout(function(){
+		var tr = d3.select("#container").selectAll("tr");
+		if (cell.isDestination) window.location.href = window.location.href;
+		var cords = cell.cords
+		var current = tr._groups[0][cords[0]].childNodes[cords[1]];
+		current.classList.toggle("current");
+	}, 3*(i+=3));
 }
 
+Maze.prototype.solve = function(untracked) {
+	for (var i = 0; i < untracked.length; i++) {
+		untracked[i].tracked = true;
+		drawCell(untracked[i]);
+		var untracked1 = untracked[i].getOpenWall().map(function(wall) {
+			return this.cellAt(addCords(untracked[i].cords, allDirections[wall]));
+		}, this).filter(function(each){ return !each.tracked});
+		this.solve(untracked1);
+		drawCell(untracked[i]);
+	}
+}
 
-var allCells = new Array(HEIGHT).fill("-").map(function(a, y) {
-	var something = new Array(WIDTH).fill("-");
-	return something.map(function(b, x) {
-		return new Cell([y, x]);
+function createCells() {
+	return allCells = new Array(HEIGHT).fill("-").map(function(a, y) {
+		var something = new Array(WIDTH).fill("-");
+		return something.map(function(b, x) {
+			return new Cell([y, x]);
+		});
 	});
-});
+}
 
-window.onload = function() {
+function initializeMaze() {
+	i = 0;
+	document.querySelector("#container").innerHTML = "";
 	var container = document.querySelector("#container");
-	var maze = new Maze(WIDTH, HEIGHT, allCells);
+	var maze = new Maze(WIDTH, HEIGHT, createCells());
 	maze.createMaze(maze.cellAt([0, 0]));
 	var destination = maze.cellAt([Math.floor(Math.random() * WIDTH), Math.floor(Math.random() * HEIGHT)]);
-	destination.isDestination = true;
+	destination.isDestination = true
 	visualize(maze.grid);
-	maze.solve(maze.cellAt([0, 0]));
+	maze.solve([maze.cellAt([0, 0])]);
+}
+
+window.onload = function() {
+	initializeMaze();
 }
 
