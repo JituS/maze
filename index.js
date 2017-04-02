@@ -1,8 +1,9 @@
-const WIDTH = HEIGHT = 50;
+const WIDTH = HEIGHT =50;
 const allDirections = {top: [-1, 0], bottom: [1, 0], left: [0, -1], right: [0, 1]};
 const oppDirectionMap = {top:"bottom", left: "right", right:"left", bottom:"top"};
 const OPEN = "open";
 const CLOSED = "closed";
+var counter;
 
 class Cell{
 	constructor(cords){
@@ -53,17 +54,19 @@ class Maze{
 		}, this).filter(Boolean);
 	}
 	cellAt(cords) { return this.grid[cords[0]][cords[1]]; }
-	solve(currentCell, drawCell) {
+	solve(currentCell) {
 		drawCell(currentCell);
 		currentCell.tracked = true;
-		currentCell.getOpenWalls().map(wall => {
+		if(currentCell.isDestination) return true;
+		var some = currentCell.getOpenWalls().map(wall => {
 			return this.cellAt(addCords(currentCell.cords, allDirections[wall]));
-		}, this)
-		.filter(each => {return !each.tracked})
-		.forEach(untrackedCell => {
-			this.solve(untrackedCell, drawCell);
-			drawCell(untrackedCell);
-		}, this);
+		}, this).filter(Boolean)
+		.filter(each => {return !each.tracked});
+		for (var i = 0; i < some.length; i++) {
+			var reached = this.solve(some[i], drawCell);
+			if(reached) return true;
+			drawCell(some[i]);
+		}
 	}
 	isValid(newCords){
 		return (newCords[0] < this.width && newCords[0] > -1 && newCords[1] < this.height && newCords[1] > -1);
@@ -84,25 +87,18 @@ function drawMaze(grid) {
 		.each(function(d) {
 			var dElem = d3.select(this);
 			d.getClosedWall().forEach(function(direction){
-				dElem.style("border-" + direction, "2px black solid");
+				dElem.style("border-" + direction, "1px black solid");
 			});
-			if(d.isDestination){
-				dElem.style("background-color", "black");
-			}
 		});
 }
 
-function cellDrawer() {
-	var counter = 0;
-	return (cell) => {
-		setTimeout(() => {
-			var tr = d3.select("#container").selectAll("tr");
-			if (cell.isDestination) window.location.href = window.location.href;
-			var cords = cell.cords
-			var current = tr._groups[0][cords[0]].childNodes[cords[1]];
-			current.classList.toggle("current");
-		}, 5*(counter+=5));
-	}
+function drawCell(cell) {
+	setTimeout(() => {
+		var tr = d3.select("#container").selectAll("tr");
+		var cords = cell.cords
+		var current = tr._groups[0][cords[0]].childNodes[cords[1]];
+		current.classList.toggle("current");
+	}, 4 * (counter += 4));
 }
 
 function createCells() {
@@ -114,14 +110,22 @@ function createCells() {
 }
 
 function getRandomCords(){
-	return [Math.floor(Math.random() * WIDTH), Math.floor(Math.random() * HEIGHT)];
+	return [Math.floor(Math.random() * WIDTH), HEIGHT-1];
 }
 
 window.onload = function() {
+	counter = 0;
+	document.querySelector("#container").innerHTML = "";
 	var maze = new Maze(WIDTH, HEIGHT, createCells());
-	var destination = maze.cellAt(getRandomCords());
-	destination.isDestination = true;
-	maze.createMaze(maze.cellAt([0, 0]));
+	var startPoint = maze.cellAt([0, 0]);
+	startPoint.markOpen("left");
+	var endPoint = maze.cellAt(getRandomCords());
+	endPoint.markOpen("right");
+	endPoint.isDestination = true;
+	maze.createMaze(startPoint);;
 	drawMaze(maze.grid);
-	maze.solve(maze.cellAt([0, 0]), cellDrawer());
+	if(maze.solve(startPoint)) setTimeout(() => {
+		window.onload();
+	}, 4.1 * (counter));
 }
+
